@@ -7,7 +7,7 @@ def is_blank(l: str) -> bool:
 
 
 def parse():
-    fp = open("dados.txt")
+    fp = open("test_data.txt")
     data = [l for l in fp.read().split("\n")]
     chunks = boundaries(data)
 
@@ -34,9 +34,8 @@ def boundaries(data: list[str]):
 def parse_chunk(chunk_lines: list[str]):
     header = None
     for (idx, l) in enumerate(chunk_lines):
-        print(l[-1])
-        if l[-1] == " ":
-            header = idx-1
+        if l[-1] == "7":
+            header = idx
             break
     parse_header(chunk_lines[:header])
 
@@ -60,6 +59,8 @@ def parse_header(hLines: list[str]):
                 aux["E"].append(line)
             case "I":
                 aux["I"].append(line)
+            case "F":
+                aux["F"].append(line)
             case _:
                 raise NotImplemented
 
@@ -68,6 +69,19 @@ def parse_header(hLines: list[str]):
         if len(v) != 0:
             headerDict.update(FUNCS[k](v))
     pprint(headerDict)
+
+
+def parse_mag(line: str):
+    magnitudes = []
+    base = 55
+    while base < 79:
+        print(base)
+        m = line[base:base+4]
+        mt = line[base+4]
+        if not is_blank(m):
+            magnitudes.append({"M": m, "T": mt})
+        base += 8
+    return magnitudes
 
 
 def parse_type_1(data: list[str]):
@@ -92,34 +106,28 @@ def parse_type_1(data: list[str]):
 
     for l in data:
         hypo["Magnitudes"] = hypo["Magnitudes"] + parse_mag(l)
-    
+
     return hypo
 
 
-def parse_mag(line: str):
-    magnitudes = []
-    base = 55
-    while base < 80:
-        m = line[base:base+4]
-        mt = line[base+4]
-        if is_blank(m):
-            break
-        magnitudes.append({"M": m, "T": mt})
-        base += 8
-    return magnitudes
-
-    
 def parse_type_2(data: list[str]):
     return {}
 
 def parse_type_3(data: list[str]):
-    return {}
+    comments = []
+    for line in data:
+        comments.append(line[:-2].strip())
+    return {"Comments": comments}
 
 def parse_type_5(data: list[str]):
     return {}
 
 def parse_type_6(data: list[str]):
-    return {}
+    waves = []
+    for l in data:
+        waves.append(l.strip().split(" ")[0])
+
+    return {"Wave": waves}
 
 def parse_type_e(data: list[str]):
     aux = data[0]
@@ -131,7 +139,9 @@ def parse_type_f(data: list[str]):
     return {}
 
 def parse_type_i(data: list[str]):
-    return {}
+    aux = data[0]
+    dt = datetime.strptime(aux[12:26], "%y-%m-%d %H:%M")
+    return {"Action": aux[8:11], "Action Extra": {"Date": dt.isoformat(), "OP": aux[30:35].strip(), "Status": aux[42:57].strip(), "ID":int(aux[60:74])}}
 
 FUNCS = {1: parse_type_1, 2: parse_type_2, 3: parse_type_3, 5: parse_type_5, 6: parse_type_6, "E": parse_type_e, "F": parse_type_f, "I": parse_type_i}
 
