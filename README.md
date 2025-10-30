@@ -14,6 +14,9 @@ First, let's represent the data using Python's Pandas module and implement CRUD 
 - T1 a T4 -> 10 de novembro
 - (a definir)
 
+## Apontamentos
+Dados parecem estar no formato [Nordic](https://seisan.info/v13/node259.html)
+
 
 ## Bibliografia
 - [Pandas lib](https://pandas.pydata.org/docs)
