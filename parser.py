@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime, time
+import warnings
 
 def is_blank(l: str) -> bool:
     return len(l.strip(" ")) == 0
@@ -50,7 +51,10 @@ def parse_chunk(chunk_lines: list[str]):
         if l[-1] == "7":
             hIdx = idx
             break
-    headersRet = parse_header(chunk_lines[:hIdx])
+    if hIdx is None:
+        raise ValueError("Expected a '7' phase header in chunk_lines")
+    else:
+        headersRet = parse_header(chunk_lines[:hIdx])
     # TODO: implementar o parser das fases parser_type_7
 
     return headersRet
@@ -73,8 +77,8 @@ def parse_header(hLines: list[str]):
                 aux["I"].append(line)
             case "F":
                 aux["F"].append(line)
-            case _:
-                raise NotImplemented
+            case unknown:
+                warnings.warn(f"header type not implemented: {unknown}")
 
     headerDict = dict()
     for (k,v) in aux.items():
