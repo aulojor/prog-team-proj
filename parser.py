@@ -1,5 +1,6 @@
 from collections import defaultdict
 from datetime import datetime, time
+import warnings
 
 def is_blank(l: str) -> bool:
     return len(l.strip(" ")) == 0
@@ -25,7 +26,7 @@ def parse():
     chunks = boundaries(data)
 
     for c in chunks:
-        parse_chunk(data[c[0]:c[1]])
+        yield parse_chunk(data[c[0]:c[1]])
 
     fp.close()
 
@@ -50,10 +51,14 @@ def parse_chunk(chunk_lines: list[str]):
         if l[-1] == "7":
             hIdx = idx
             break
-    headersRet = parse_header(chunk_lines[:hIdx])
-    # TODO: implementar o parser das fases parser_type_7
+    if hIdx is None:
+        raise ValueError("Expected a '7' phase header in chunk_lines")
+    else:
+        headersRet = parse_header(chunk_lines[:hIdx])
+        phaseRet = parse_type_7(chunk_lines[hIdx+1:])
+    eventData = headersRet | phaseRet
 
-    return headersRet
+    return eventData
     
 
 def parse_header(hLines: list[str]):
@@ -73,8 +78,8 @@ def parse_header(hLines: list[str]):
                 aux["I"].append(line)
             case "F":
                 aux["F"].append(line)
-            case _:
-                raise NotImplemented
+            case unknown:
+                warnings.warn(f"header type not implemented: {unknown}")
 
     headerDict = dict()
     for (k,v) in aux.items():
@@ -138,7 +143,6 @@ def parse_type_7(data: list[str]):
     phases = []
     # nordic format
     for l in data:
-        print(l)
         h = int(l[18:20])
         m = int(l[20:22])
         sec = int(l[23:25])
@@ -167,4 +171,4 @@ def parse_type_i(data: list[str]):
 FUNCS = {1: parse_type_1, 3: parse_type_3, 6: parse_type_6, "E": parse_type_e, "F": parse_type_f, "I": parse_type_i}
 
 
-parse()
+print(next(parse()))
