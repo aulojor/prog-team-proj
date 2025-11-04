@@ -32,12 +32,6 @@ def into_dataframe(data) -> pd.DataFrame:
 
     return pd.DataFrame(data=aux)
 
-
-def test(d1, d2):
-    for col in d2.columns:
-        d1.at[0, col] = d2[col].tolist()
-    return d1
-
 # ------------ principal
 
 def parse(fname="dados.txt"):
@@ -49,7 +43,9 @@ def parse(fname="dados.txt"):
         a = parse_chunk(data[c[0]:c[1]], idx)
         aux = pd.concat([df, a], axis=0, ignore_index=True)
         df = aux
-
+    print(df)
+    aux = df.loc[df["ID"] == 14]
+    print(aux)
     fp.close()
 
     return df
@@ -80,7 +76,6 @@ def parse_chunk(chunk_lines: list[str], iD):
     hDF = into_dataframe(headersRet)
     hDF["ID"] = iD
     phaseRet["ID"] = iD
-
     return pd.concat([hDF, phaseRet])
     
 
