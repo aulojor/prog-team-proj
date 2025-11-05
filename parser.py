@@ -43,9 +43,9 @@ def parse(fname="dados.txt"):
         a = parse_chunk(data[c[0]:c[1]], idx)
         aux = pd.concat([df, a], axis=0, ignore_index=True)
         df = aux
-    print(df)
+    # print(df)
     aux = df.loc[df["ID"] == 14]
-    print(aux)
+    # print(aux)
     fp.close()
 
     return df
