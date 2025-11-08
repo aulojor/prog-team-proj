@@ -1,3 +1,4 @@
+# pyright: basic
 import io
 import warnings
 
@@ -6,6 +7,12 @@ from datetime import datetime
 
 import pandas as pd
 
+# --- globals ---
+DIST_IND = {"L": "Local", "R": "Regional", "D": "Distante"}
+TYPE = {"Q": "Quake", "V": "Volcanic", "U": "Unknown", "E": "Explosion"}
+
+
+# --- helper funcs --- 
 def is_blank(l: str) -> bool:
     return len(l.strip(" ")) == 0
 
@@ -32,22 +39,24 @@ def into_dataframe(data) -> pd.DataFrame:
 
     return pd.DataFrame(data=aux)
 
-# ------------ principal
+def _concat(preamble, df: pd.DataFrame):
+    for (k,v) in preamble.items():
+        df.insert(len(df.columns)-1, k, [v for _ in range(len(df))])
 
-def parse(fname="dados.txt"):
+    return df
+
+
+# --- principal ---
+def parse(fname):
     fp = open(fname)
     data = [l for l in fp.read().split("\n")]
     chunks = boundaries(data)
     df = pd.DataFrame()
     for (idx,c) in enumerate(chunks):
-        a = parse_chunk(data[c[0]:c[1]], idx)
+        a = parse_chunk(data[c[0]:c[1]])
         aux = pd.concat([df, a], axis=0, ignore_index=True)
         df = aux
-    # print(df)
-    aux = df.loc[df["ID"] == 14]
-    # print(aux)
     fp.close()
-
     return df
 
 def boundaries(data: list[str]):
@@ -63,23 +72,18 @@ def boundaries(data: list[str]):
                 start = None
     return boundaries
 
-
-def parse_chunk(chunk_lines: list[str], iD):
+def parse_chunk(chunk_lines: list[str]):
     hIdx = None
     for (idx, l) in enumerate(chunk_lines):
         if l[-1] == "7":
             hIdx = idx
             break
-    headersRet = parse_header(chunk_lines[:hIdx])
-    phaseRet = parse_type_7(chunk_lines[hIdx:])
+    preambleRet = _parse_preamble(chunk_lines[:hIdx])
+    phaseRet = _parse_type_7(chunk_lines[hIdx:])
 
-    hDF = into_dataframe(headersRet)
-    hDF["ID"] = iD
-    phaseRet["ID"] = iD
-    return pd.concat([hDF, phaseRet])
-    
+    return _concat(preambleRet, phaseRet)
 
-def parse_header(hLines: list[str]):
+def _parse_preamble(hLines: list[str]):
     aux = defaultdict(list)
 
     for line in hLines:
@@ -91,13 +95,15 @@ def parse_header(hLines: list[str]):
             case "6":
                 aux[6].append(line)
             case "E":
-                aux["E"].append(line)
+                pass
+                # aux["E"].append(line)
             case "I":
                 aux["I"].append(line)
             case "F":
-                aux["F"].append(line)
-            case unknown:
-                warnings.warn(f"header type not implemented: {unknown}")
+                pass
+                # aux["F"].append(line)
+            case _:
+                pass
 
     headerDict = dict()
     for (k,v) in aux.items():
@@ -106,19 +112,7 @@ def parse_header(hLines: list[str]):
     return headerDict
 
 
-def parse_mag(line: str):
-    magnitudes = []
-    base = 55
-    while base < 79:
-        m = line[base:base+4]
-        mt = line[base+4]
-        if not is_blank(m):
-            magnitudes.append({"M": m, "T": mt})
-        base += 8
-    return magnitudes
-
-
-def parse_type_1(data: list[str]):
+def _parse_type_1(data: list[str]):
     aux = data[0]
     y = int(aux[1:5])
     mo = int(aux[6:8])
@@ -129,55 +123,65 @@ def parse_type_1(data: list[str]):
     mil = int(aux[19]) * 10**5
     dt = datetime(y,mo,d,h,m,s,mil)
 
-    dist_ind = aux[21]
-    eId = aux[22]
+    dist_ind = DIST_IND[aux[21]]
+    ev_type = TYPE[aux[22]]
     lat = float(aux[23:30])
     long = float(aux[30:38])
     depth = float(aux[38:43])
-    rep_ag = aux[45:48]
+    no_stat = int(aux[48:51])
 
-    hypo = {"DateTime": dt.isoformat(), "Distance Indicator": dist_ind, "Event ID": eId, "Lat": lat, "Long": long, "Depth": depth, "Agency": rep_ag, "Magnitudes": list()}
+    hypo = {"Data": dt.isoformat(), "Distancia": dist_ind, "Event Type": ev_type, "Lat": lat, "Long": long, "Depth": depth, "No. Stations": no_stat, "Magnitudes": list()}
     for l in data:
-        hypo["Magnitudes"] = hypo["Magnitudes"] + parse_mag(l)
+        hypo["Magnitudes"] = hypo["Magnitudes"] + _parse_mag(l)
 
     return hypo
 
-def parse_type_3(data: list[str]):
-    comments = []
+def _parse_mag(line: str):
+    magnitudes = []
+    base = 55
+    while base < 79:
+        m = line[base:base+4]
+        mt = line[base+4]
+        if not is_blank(m):
+            magnitudes.append({"Magnitude": m, "Tipo": mt})
+        base += 8
+    return magnitudes
+
+
+def _parse_type_3(data: list[str]):
+    comments = {}
     for line in data:
-        comments.append(line[:-2].strip())
-    return {"Comments": comments}
+        if line.startswith(" SENTIDO") or line.startswith(" REGIAO"):
+            c, v = line[:-2].strip().split(": ", maxsplit=1)
+            comments[c.capitalize()] = v
+
+    return comments
 
 
-def parse_type_6(data: list[str]):
+def _parse_type_6(data: list[str]):
     waves = []
     for l in data:
         waves.append(l.strip().split(" ")[0])
     return {"Wave": waves}
 
-def parse_type_7(data: list[str]):
+
+def _parse_type_7(data: list[str]):
     aux = io.StringIO("\n".join(data))
-    dados = pd.read_fwf(aux, colspecs=[(1,5), (6,8), (9,10), (10,15), (16,17), (18,22), (23,28), (29,33), (34,40), (41,45), (46,50), (51,56), (57,60), (61,63), (64,68), (69,70), (72,75), (76,79)])
+    dados = pd.read_fwf(aux, colspecs=[(1,5), (6,8),(10,15), (18,20), (20,22), (23,28), (34,38)])
     return dados
 
 
-
-def parse_type_e(data: list[str]):
+def _parse_type_e(data: list[str]):
     aux = data[0]
     error = {"Gap": int(aux[5:8]), "Origin": float(aux[14:20]), "Error_lat": float(aux[24:30]), "Error_long": float(aux[32:38]), "Error_depth": float(aux[38:43]), "Cov_xy": float(aux[43:55]), "Cov_xz": float(aux[55:67]), "Cov_yz": float(aux[67:79])}
     return error
 
 
-def parse_type_f(data: list[str]):
-    return {}
-
-
-def parse_type_i(data: list[str]):
+def _parse_type_i(data: list[str]):
     aux = data[0]
-    dt = datetime.strptime(aux[12:26], "%y-%m-%d %H:%M")
-    return {"Action": aux[8:11], "Action Extra": {"Date": dt.isoformat(), "OP": aux[30:35].strip(), "Status": aux[42:57].strip(), "ID":int(aux[60:74])}}
+    return {"ID":int(aux[60:74])}
 
 
-FUNCS = {1: parse_type_1, 3: parse_type_3, 6: parse_type_6, "E": parse_type_e, "F": parse_type_f, "I": parse_type_i}
+FUNCS = {1: _parse_type_1, 3: _parse_type_3, 6: _parse_type_6, "E": _parse_type_e, "I": _parse_type_i}
 
-parse()
+parse("dados.txt")

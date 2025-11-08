@@ -1,3 +1,5 @@
+# pyright: basic
+
 import pandas as pd
 import parser
 import earthquakes as eq
@@ -46,9 +48,7 @@ def read_table_row(df, event_id, row_number_1):
     info = []
     for (i, col) in enumerate(tableCols):
         info.append(f"{i+1} {col}: {row[col]}")
-        # TODO corrigir numeros acima de 10 arruinando o alinhamento
-    infoString = f"Linha {row_number_1} do evento {event_id}:\n" + "\n".join(info) 
-    return infoString
+    return f"Linha {row_number_1:02d} do evento {event_id}:\n" + "\n".join(info) 
 
 def update_table_row(df, event_id, row_number_1, new_data):
     # atualiza uma linha específica da tabela do evento
