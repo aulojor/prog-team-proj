@@ -1,5 +1,10 @@
 # Project I - Earthquakes
 
+## Como utilizar
+Correr o ficheiro `earthquakes.py` usando `python earthquakes.py`
+
+## Objectivos
+
 First, let's represent the data using Python's Pandas module and implement CRUD operations, including JSON's conversion. Then, let's implement some statistical operations with graphical representations using Python's Matplotlib module over data representation in Pandas data model.
 
 ## Tarefas:
@@ -16,7 +21,6 @@ First, let's represent the data using Python's Pandas module and implement CRUD 
 
 ## Apontamentos
 Dados parecem estar no formato [Nordic](https://seisan.info/v13/node259.html)
-
 
 ## Bibliografia
 - [Pandas lib](https://pandas.pydata.org/docs)
