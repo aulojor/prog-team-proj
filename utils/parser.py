@@ -45,6 +45,10 @@ def _concat(preamble, df: pd.DataFrame):
 
     return df
 
+def validate_no_stations(expected:int , stationsDF:pd.DataFrame) -> bool:
+    uniqueStations = stationsDF["Estacao"].nunique()
+    return expected == uniqueStations
+
 
 # --- principal ---
 def parse(fname):
@@ -80,6 +84,9 @@ def parse_chunk(chunk_lines: list[str]):
             break
     preambleRet = _parse_preamble(chunk_lines[:hIdx])
     phaseRet = _parse_type_7(chunk_lines[hIdx:])
+
+    if not validate_no_stations(preambleRet["Estacoes"], phaseRet):
+        pass
 
     return _concat(preambleRet, phaseRet)
 
@@ -130,7 +137,7 @@ def _parse_type_1(data: list[str]):
     depth = float(aux[38:43])
     no_stat = int(aux[48:51])
 
-    hypo = {"Data": dt.isoformat(), "Distancia": dist_ind, "Event Type": ev_type, "Lat": lat, "Long": long, "Depth": depth, "No. Stations": no_stat, "Magnitudes": list()}
+    hypo = {"Data": dt.isoformat(), "Distancia": dist_ind, "Tipo Ev": ev_type, "Lat": lat, "Long": long, "Prof": depth, "Estacoes": no_stat, "Magnitudes": list()}
     for l in data:
         hypo["Magnitudes"] = hypo["Magnitudes"] + _parse_mag(l)
 
@@ -162,12 +169,13 @@ def _parse_type_6(data: list[str]):
     waves = []
     for l in data:
         waves.append(l.strip().split(" ")[0])
-    return {"Wave": waves}
+    return {"Onda": waves}
 
 
 def _parse_type_7(data: list[str]):
     aux = io.StringIO("\n".join(data))
     dados = pd.read_fwf(aux, colspecs=[(1,5), (6,8),(10,15), (18,20), (20,22), (23,28), (34,38)])
+    dados.rename(columns={'STAT': "Estacao", 'SP': "Componente" , 'PHASW': "Tipo Onda", 'HR': "Hora", 'MM': "Min", 'SECON': "Seg", 'AMPL': "Amplitude"}, inplace=True)
     return dados
 
 

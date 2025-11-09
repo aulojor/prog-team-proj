@@ -6,15 +6,17 @@ import os
 
 import pandas as pd
 
-import parser
-import crud
+from utils import parser, crud
 
 HEADER = """=== Terramotos ==="""
 
 MENU ="""[1] Criar a base de dados
 [2] Atualizar uma entrada
-[3] Apagar uma entrada
-[4] Visualizar uma entrada
+[3] Apagar um evento
+[4] Apagar uma entrada de um evento
+[5] Visualizar uma entrada
+[6] Guardar como JSON
+[7] Guardar como CSV
 
 [Q] Sair
 """
@@ -28,6 +30,7 @@ def guardar_df(df: pd.DataFrame, fname: str) -> bool:
             return False
     return True
 
+
 def guardar_json(df: pd.DataFrame, fname: str) -> bool:
     with open(fname , "w") as fp:
         try:
@@ -35,6 +38,7 @@ def guardar_json(df: pd.DataFrame, fname: str) -> bool:
         except:
             return False
     return True
+
 
 def guardar_csv(df: pd.DataFrame, fname: str):
     with open(fname, "w") as fp:
@@ -44,9 +48,11 @@ def guardar_csv(df: pd.DataFrame, fname: str):
             return False
     return True
 
+
 def main():
     isRunning = True
-    db = parser.parse("dados.txt")
+    db = None
+    
     retInfo = None
 
     while isRunning:
@@ -56,15 +62,15 @@ def main():
 
         match usrIn:
             case "1":
-                os.system("cls")
-                print(HEADER + "\nCRIAR")
-                fname = input("Nome do ficheiro com os dados. (Branco para dados.txt)")
-                if fname == "":
+                fname = _get_usr_input("Qual os dados a ler? (dados.txt por defeito): ")
+                if fname is None:
                     fname = "dados.txt"
+
                 if _file_exists(fname):
                     db = parser.parse(fname)
+                    input("Base de dados populada. Enter para voltar ao menu inicial")
                 else:
-                    retInfo = "Nenhum ficheiro encontrado!"
+                    input("Base de dados não encontrada. Por favor tenta de novo.")
 
             case "2":
                 if db is not None:
@@ -74,28 +80,69 @@ def main():
 
             case "3":
                 if db is not None:
-                    a = _get_uniques(db)
-                    ev_ids = _show_events(a)
+                    crud.read_ids(db)
+                    choice = _get_usr_input("Escolhe o ID para apagar: ", int)
 
-                    _select = input("Qual a entrada a apagar: ")
+                    if not _event_exists(db, choice):
+                        retInfo = "ID do event não encontrado!"
 
-                    db = db.drop(db[db["ID"] == ev_ids[_select]].index)
+                    else:
+                        db = crud.delete_event(db, choice)
+                        input()
 
                 else:
                     retInfo = "Base de dados não encontrada!"
+
 
             case "4":
                 if db is not None:
-                    a = _get_uniques(db)
-                    ev_ids = _show_events(a)
+                    crud.read_ids(db)
+                    eid_choice = _get_usr_input("Escolhe o ID: ", int)
 
-                    _select = input("Qual a entrada a visualizar: ")
-                    _view_event(db, ev_ids[_select])
+                    if not _event_exists(db, eid_choice):
+                        retInfo = "ID do event não encontrado!"
 
-                    input()
+                    else:
+                        db = crud.delete_event(db, eid_choice)
+                        input()
 
                 else:
                     retInfo = "Base de dados não encontrada!"
+
+            case "5":
+                if db is not None:
+                    crud.read_ids(db)
+                    choice = _get_usr_input("Escolhe o ID para ver os dados: ", int)
+
+                    if not _event_exists(db, choice):
+                        retInfo = "ID do event não encontrado!"
+
+                    else:
+                        table = crud.get_table(db, choice)
+                        crud.show_table(table)
+                        input()
+
+                else:
+                    retInfo = "Base de dados não encontrada!"
+
+            case "6":
+                if db is not None:
+                    fname = _get_usr_input("Nome do ficheiro a guardar?")
+                    if fname is None:
+                        fname = "valores.json"
+                    guardar_json(db, fname)
+                else:
+                    retInfo = "Base de dados não encontrada!"
+
+            case "7":
+                if db is not None:
+                    fname = _get_usr_input("Nome do ficheiro a guardar?")
+                    if fname is None:
+                        fname = "valores.csv"
+                    guardar_csv(db, fname)
+                else:
+                    retInfo = "Base de dados não encontrada!"
+
             case "q":
                 isRunning = False
                 continue
@@ -114,22 +161,17 @@ def _file_exists(name: str) -> bool:
         return True
     return False
 
-def _get_uniques(df) -> pd.DataFrame:
-    return df.get(["ID", "Data", "Regiao"]).drop_duplicates(subset="ID", keep="first")
+def _event_exists(df, eid) -> bool:
+    allEvents = set(df["ID"])
+    return eid in allEvents
 
-def _show_events(df):
-    events = {}
-    idx = 1
-    for (_, row) in df.iterrows():
-        print(f"{idx:2d}| {row["Regiao"]}")
-        events[str(idx)] = row["ID"]
-        idx += 1
-    return events
 
-def _view_event(df, id):
-    for idx, row in df.loc[df["ID"] == id ].iterrows():
-        print(row)
+def _get_usr_input(msg:str, asType=str):
+    usrIn = input(msg)
 
+    if usrIn == "":
+        return None
+    return asType(usrIn)
 
 
 if __name__ == '__main__':

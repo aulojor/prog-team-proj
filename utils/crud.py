@@ -1,39 +1,49 @@
 # pyright: basic
 
 import pandas as pd
-import parser
-import earthquakes as eq
+from . import parser
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 150)
 
+HEADER_COLS = ["Data", "Distancia", "Tipo Ev", "Lat", "Long", "Prof", "Magnitudes"]
+TABLE_READ_RET = ["Data", "Lat", "Long", "Distancia", "Tipo Ev"]
+
+def _get_uniques(df) -> pd.DataFrame:
+    return df.get(["ID", "Data", "Regiao"]).drop_duplicates(subset="ID", keep="first")
+
+def _show_events(df):
+    for (_, row) in df.iterrows():
+        print(f"{row["ID"]}: {row["Regiao"]}")
+
 def read_ids(df):
-    # Lista de IDs únicos no DataFrame
-    return sorted(set(df["ID"]))
+    ids = _get_uniques(df)
+    _show_events(ids)
+
 
 def read_header(df, event_id):
     # Informações do header do evento
     row = df[df["ID"] == event_id].iloc[0]
     cols = list(df.columns)
-    headerCols = ["DateTime", "Distance Indicator", "Event ID", "Lat", "Long", "Depth", "Agency", "Magnitudes"]
     # end = cols.index("ID") - 1
     # header_cols = cols[:end]
     # Para selecionar todas as colunas em vez de só algumas
     info = []
-    for (i, col) in enumerate(headerCols):
+    for (i, col) in enumerate(HEADER_COLS):
         info.append(f"{i+1} {col}: {row[col]}")
     infoString = f"Header do evento {event_id}:\n" + "\n".join(info) 
     return infoString
 
+def show_table(df, retCols=TABLE_READ_RET):
+    print(df.loc[:,retCols])
+
 
 def get_table(df, event_id):
-    # retorna a tabela de dados do evento
     rows = df[df["ID"] == event_id]
-    cols = list(df.columns)
-    start = cols.index("ID") + 1
-    table = rows[cols[start:]].iloc[1:]
-    return table
+    rows = rows.drop("ID", axis=1)
+    return rows
+
 
 def read_table_row(df, event_id, row_number_1):
     # retorna uma linha específica da tabela
@@ -43,7 +53,7 @@ def read_table_row(df, event_id, row_number_1):
         return f"Linha {row_number_1} não pertence ao evento {event_id}."
     row = table.iloc[row_number_0]
     cols = list(df.columns)
-    start = cols.index("STAT")
+    start = cols.index("Estacao")
     tableCols = cols[start:]
     info = []
     for (i, col) in enumerate(tableCols):
@@ -71,7 +81,7 @@ def update_header(df, event_id, new_data):
 def delete_event(df, event_id):
     # Apaga um evento inteiro (header + tabela)
     new_df = df.drop(df[df["ID"] == event_id].index)
-    new_df.loc[df["ID"] > event_id, "ID"] -= 1
+    print(f"Evento {event_id} apagado!")
     return new_df
 
 def delete_table_row(df, event_id, row_number_1):
@@ -120,17 +130,6 @@ def create_table_row(df, event_id, row_number_1):
 
     return new_df, f"Linha inserida com sucesso na posição {row_number_1} do evento {event_id}."
 
-''' teste temporário enquanto não temnos menu
-if __name__ == "__main__":
-    df = parser.parse()
-    first_id = read_ids(df)[0]
-    for i in range(5):
-        df = delete_event(df, i)
-    for i in range(5):
-        df = create_blank_event(df, i+5)
-    update_table_row(df, 5, 1, {"Velo": 5.1})
-    df, msg = insert_table_row(df, 5, 1)
-    df, msg = insert_table_row(df, 5, 3)
-    eq.guardar_csv(df, "dados.csv")
-    eq.guardar_df(df, "data.txt")
-'''
+def create_entire_database() -> pd.DataFrame:
+    pass
+
