@@ -18,6 +18,7 @@ MENU ="""[1] Criar a base de dados
 [6] Guardar como JSON
 [7] Guardar como CSV
 [8] Estatísticas
+[9] Atualizar uma entrada de um evento
 
 [Q] Sair
 """
@@ -158,6 +159,25 @@ def main():
                     pass
                 else:
                     retInfo = "Base de dados não encontrada!"
+
+            case "9":
+                if db is not None:
+                    crud.read_ids(db)
+                    eid_choice = _get_usr_input("Escolhe o ID: ", int)
+
+                    if not _event_exists(db, eid_choice):
+                        retInfo = "ID do event não encontrado!"
+
+                    else:
+                        table = crud.get_table(db, eid_choice)
+                        crud.show_table(table)
+                        row_choice = _get_usr_input("Escolhe a linha a atualizar: ", int)
+                        new_data = {}
+                        for col in crud.TABLE_READ_RET:
+                            val = _get_usr_input(f"Novo valor para {col} (Enter para manter o valor atual): ")
+                            if val is not None:
+                                new_data[col] = val
+                        crud.update_table_row(db, row_choice, new_data)
 
             case "q":
                 isRunning = False
