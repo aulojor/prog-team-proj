@@ -1,6 +1,7 @@
 # pyright: basic
 
 import os
+import sys
 
 import pandas as pd
 import numpy as np
@@ -29,7 +30,7 @@ CHOICE = {"1": "Magnitudes", "2": "Distancia","3": "Prof"}
 
 
 def filter_submenu(type: str):
-    os.system("cls")
+    os.system("cls" if sys.platform == "windows" else "clear")
     print(f"{STAT_HEADER}\n  = {type} =  ")
     print(FILTER_CHOICES)
 
@@ -45,7 +46,7 @@ def filter_submenu(type: str):
 def stat_menu(df: pd.DataFrame):
     inStats = True
     while inStats:
-        os.system("cls")
+        os.system("cls" if sys.platform == "windows" else "clear")
         print(STAT_HEADER + "\n" + STAT_MENU)
         usrIn = input("Opção: ").lower()
 

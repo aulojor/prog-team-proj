@@ -159,6 +159,7 @@ def _parse_type_3(data: list[str]):
     for line in data:
         if line.startswith(" SENTIDO") or line.startswith(" REGIAO"):
             c, v = line[:-2].strip().split(": ", maxsplit=1)
+            v = v.split(",")[0]
             comments[c.capitalize()] = v
 
     return comments
@@ -173,8 +174,8 @@ def _parse_type_6(data: list[str]):
 
 def _parse_type_7(data: list[str]):
     aux = io.StringIO("\n".join(data))
-    dados = pd.read_fwf(aux, colspecs=[(1,5), (6,8),(10,15), (18,20), (20,22), (23,28), (34,38)])
-    dados.rename(columns={'STAT': "Estacao", 'SP': "Componente" , 'PHASW': "Tipo Onda", 'HR': "Hora", 'MM': "Min", 'SECON': "Seg", 'AMPL': "Amplitude"}, inplace=True)
+    dados = pd.read_fwf(aux, colspecs=[(1,5), (6,8),(10,15), (18,20), (20,22), (23,28), (34,38), (71,75)])
+    dados.rename(columns={'STAT': "Estacao", 'SP': "Componente" , 'PHASW': "Tipo Onda", 'HR': "Hora", 'MM': "Min", 'SECON': "Seg", 'AMPL': "Amplitude", " DIST": "Dist. Epi"}, inplace=True)
     return dados
 
 

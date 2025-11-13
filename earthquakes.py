@@ -2,6 +2,7 @@
 # pyright: basic
 
 import os
+import sys
 from datetime import datetime
 
 import pandas as pd
@@ -11,7 +12,7 @@ from utils import parser, crud, stats
 HEADER = """=== Terramotos ==="""
 
 MENU ="""[1] Criar a base de dados
-[2] Atualizar uma entrada
+[] Atualizar uma entrada (Removido)
 [3] Apagar um evento
 [4] Apagar uma entrada de um evento
 [5] Visualizar um evento
@@ -58,7 +59,7 @@ def main():
     retInfo = None
 
     while isRunning:
-        os.system("cls")
+        os.system("cls" if sys.platform == "windows" else "clear")
         print(HEADER + "\n" + MENU)
         usrIn = input("Opção: ").lower()
 
@@ -78,23 +79,24 @@ def main():
                     input("Base de dados não encontrada. Por favor tenta de novo.")
 
             case "2":
-                if db is not None:
-                    crud.read_ids(db)
-                    eid_choice = _get_usr_input("Escolhe o ID: ", int)
-
-                    if not _event_exists(db, eid_choice):
-                        retInfo = "ID do event não encontrado!"
-
-                    else:
-                        table = crud.get_table(db, eid_choice)
-                        crud.show_table(table)
-                        row_choice = _get_usr_input("Escolhe a linha a atualizar: ", int)
-                        new_data = {}
-                        for col in crud.TABLE_READ_RET:
-                            val = _get_usr_input(f"Novo valor para {col} (Enter para manter o valor atual): ")
-                            if val is not None:
-                                new_data[col] = val
-                        crud.update_table_row(db, row_choice, new_data)
+                pass
+#                 if db is not None:
+#                     crud.read_ids(db)
+#                     eid_choice = _get_usr_input("Escolhe o ID: ", int)
+# 
+#                     if not _event_exists(db, eid_choice):
+#                         retInfo = "ID do event não encontrado!"
+# 
+#                     else:
+#                         table = crud.get_table(db, eid_choice)
+#                         crud.show_table(table)
+#                         row_choice = _get_usr_input("Escolhe a linha a atualizar: ", int)
+#                         new_data = {}
+#                         for col in crud.TABLE_READ_RET:
+#                             val = _get_usr_input(f"Novo valor para {col} (Enter para manter o valor atual): ")
+#                             if val is not None:
+#                                 new_data[col] = val
+#                         crud.update_table_row(db, row_choice, new_data)
 
             case "3":
                 if db is not None:
@@ -121,7 +123,7 @@ def main():
                         retInfo = "ID do event não encontrado!"
 
                     else:
-                        os.system("cls")
+                        os.system("cls" if sys.platform == "windows" else "clear")
                         table = crud.get_table(db, eid_choice)
                         _prettify_event(table)
                         crud.show_table(table)
@@ -146,6 +148,7 @@ def main():
                         retInfo = "ID do event não encontrado!"
 
                     else:
+                        os.system("cls" if sys.platform == "windows" else "clear")
                         table = crud.get_table(db, choice)
                         _prettify_event(table)
                         crud.show_table(table)
@@ -187,7 +190,7 @@ def main():
                         retInfo = "ID do event não encontrado!"
 
                     else:
-                        os.system("cls")
+                        os.system("cls" if sys.platform == "windows" else "clear")
                         table = crud.get_table(db, eid_choice)
                         _prettify_event(table)
                         crud.show_table(table)
